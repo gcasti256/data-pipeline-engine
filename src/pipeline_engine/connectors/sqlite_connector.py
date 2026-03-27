@@ -32,9 +32,6 @@ class SQLiteConnector(BaseConnector):
         self.database = database
         self._conn: aiosqlite.Connection | None = None
 
-    # ------------------------------------------------------------------
-    # Internal helpers
-    # ------------------------------------------------------------------
 
     async def _get_connection(self) -> aiosqlite.Connection:
         if self._conn is None:
@@ -51,9 +48,6 @@ class SQLiteConnector(BaseConnector):
             schema[key] = _PYTHON_TO_SQLITE.get(py_type, "TEXT")
         return schema
 
-    # ------------------------------------------------------------------
-    # DDL
-    # ------------------------------------------------------------------
 
     async def create_table(
         self, table: str, schema: dict[str, str]
@@ -74,9 +68,6 @@ class SQLiteConnector(BaseConnector):
         )
         await conn.commit()
 
-    # ------------------------------------------------------------------
-    # Read
-    # ------------------------------------------------------------------
 
     async def read(
         self,
@@ -140,9 +131,6 @@ class SQLiteConnector(BaseConnector):
             batch = [dict(zip(columns, row)) for row in rows]
             yield batch
 
-    # ------------------------------------------------------------------
-    # Write
-    # ------------------------------------------------------------------
 
     async def write(
         self,
@@ -208,9 +196,6 @@ class SQLiteConnector(BaseConnector):
 
         return len(records)
 
-    # ------------------------------------------------------------------
-    # Lifecycle
-    # ------------------------------------------------------------------
 
     async def close(self) -> None:
         """Close the database connection."""

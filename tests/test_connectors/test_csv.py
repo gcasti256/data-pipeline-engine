@@ -7,10 +7,6 @@ import pytest
 from pipeline_engine.connectors.base import ConnectorConfig
 from pipeline_engine.connectors.csv_connector import CSVConnector
 
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
-
 
 class TestCSVConnector:
     @pytest.mark.asyncio

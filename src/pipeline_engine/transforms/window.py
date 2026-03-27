@@ -57,9 +57,6 @@ class WindowTransform(BaseTransform):
         self._aggregation = aggregation
         self._column = column
 
-    # ------------------------------------------------------------------
-    # Execution
-    # ------------------------------------------------------------------
 
     def execute(
         self,
@@ -87,9 +84,6 @@ class WindowTransform(BaseTransform):
 
         return results
 
-    # ------------------------------------------------------------------
-    # Aggregation helpers
-    # ------------------------------------------------------------------
 
     def _compute(self, window: list[dict[str, Any]]) -> Any:
         if self._aggregation == "count":

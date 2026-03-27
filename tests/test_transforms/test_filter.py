@@ -6,10 +6,6 @@ import pytest
 
 from pipeline_engine.transforms.filter import FilterTransform
 
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
-
 
 class TestFilterTransform:
     def test_numeric_comparison_greater_than(self):

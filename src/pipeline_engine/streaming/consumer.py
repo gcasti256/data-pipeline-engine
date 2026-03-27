@@ -103,9 +103,6 @@ class StreamConsumer:
         """Current streaming metrics."""
         return self._metrics
 
-    # ------------------------------------------------------------------
-    # Execution
-    # ------------------------------------------------------------------
 
     async def run(self) -> StreamMetrics:
         """Execute the streaming pipeline to completion.
@@ -151,9 +148,6 @@ class StreamConsumer:
 
         return self._metrics
 
-    # ------------------------------------------------------------------
-    # Internal pipeline stages
-    # ------------------------------------------------------------------
 
     def _apply_transforms(
         self, records: list[dict[str, Any]]

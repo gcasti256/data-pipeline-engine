@@ -6,10 +6,6 @@ import pytest
 
 from pipeline_engine.validation.dead_letter import DeadLetterQueue
 
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
-
 
 class TestDeadLetterQueue:
     def test_add_and_retrieve(self):

@@ -63,9 +63,6 @@ class PipelineExecutor:
         """Read-only view of node outputs keyed by node id."""
         return dict(self._results)
 
-    # ------------------------------------------------------------------
-    # Public API
-    # ------------------------------------------------------------------
 
     async def execute(self) -> PipelineState:
         """Run the pipeline to completion and return the final state.
@@ -128,9 +125,6 @@ class PipelineExecutor:
 
         return state
 
-    # ------------------------------------------------------------------
-    # Node execution
-    # ------------------------------------------------------------------
 
     async def _execute_node_with_retries(
         self,
@@ -233,15 +227,12 @@ class PipelineExecutor:
 
     @staticmethod
     async def _invoke_operation(operation: Callable[..., Any], context: dict[str, Any]) -> Any:
-        """Call the operation, transparently handling both sync and async functions."""
+        """Call the operation, handling both sync and async functions."""
         result = operation(context)
-        if asyncio.iscoroutine(result) or asyncio.isfuture(result):
+        if asyncio.iscoroutine(result):
             return await result
         return result
 
-    # ------------------------------------------------------------------
-    # Helpers
-    # ------------------------------------------------------------------
 
     @staticmethod
     def _count_records(result: Any) -> int:

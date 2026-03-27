@@ -10,10 +10,6 @@ from pipeline_engine.core.dag import DAG, Node
 from pipeline_engine.core.executor import PipelineExecutor
 from pipeline_engine.core.state import RunStatus
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
 
 def _make_sync_op(return_value):
     """Create a sync operation that returns a fixed value."""
@@ -29,11 +25,6 @@ def _make_async_op(return_value, delay: float = 0):
             await asyncio.sleep(delay)
         return return_value
     return _op
-
-
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
 
 
 class TestPipelineExecution:

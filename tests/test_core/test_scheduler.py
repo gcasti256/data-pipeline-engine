@@ -13,11 +13,6 @@ def _noop(ctx):
     return None
 
 
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
-
-
 class TestScheduler:
     def test_get_next_batch_respects_dependencies(self, diamond_dag: DAG):
         """Only nodes with all dependencies COMPLETED are dispatched."""

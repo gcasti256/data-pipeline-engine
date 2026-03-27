@@ -8,10 +8,6 @@ from typing import Any
 
 from pipeline_engine.transforms.base import BaseTransform
 
-# ---------------------------------------------------------------------------
-# Safe expression evaluator
-# ---------------------------------------------------------------------------
-
 _BINARY_OPS: dict[type, Callable[[Any, Any], Any]] = {
     ast.Add: operator.add,
     ast.Sub: operator.sub,
@@ -128,10 +124,6 @@ def _safe_eval(expr: str, record: dict[str, Any]) -> Any:
     """Evaluate *expr* against *record* without using ``eval()``."""
     return _ExpressionEvaluator(expr, record).evaluate()
 
-
-# ---------------------------------------------------------------------------
-# MapTransform
-# ---------------------------------------------------------------------------
 
 class MapTransform(BaseTransform):
     """Transform columns by renaming, casting, or computing new values.

@@ -8,11 +8,6 @@ import yaml
 from pipeline_engine.config.models import PipelineConfig
 from pipeline_engine.config.parser import parse_config, validate_config
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
 _VALID_CONFIG = {
     "name": "test_pipeline",
     "version": "1.0",
@@ -45,11 +40,6 @@ def _write_yaml(tmp_path, data: dict, filename: str = "pipeline.yaml") -> str:
     p = tmp_path / filename
     p.write_text(yaml.dump(data, default_flow_style=False))
     return str(p)
-
-
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
 
 
 class TestParseConfig:

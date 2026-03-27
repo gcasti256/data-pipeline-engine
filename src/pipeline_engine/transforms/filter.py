@@ -34,9 +34,6 @@ class FilterTransform(BaseTransform):
             self._raw_condition
         )
 
-    # ------------------------------------------------------------------
-    # Condition parsing
-    # ------------------------------------------------------------------
 
     @staticmethod
     def _parse_condition(condition: str) -> tuple[str, str, Any]:
@@ -71,9 +68,6 @@ class FilterTransform(BaseTransform):
 
         raise ValueError(f"Unable to parse condition: {condition!r}")
 
-    # ------------------------------------------------------------------
-    # Evaluation
-    # ------------------------------------------------------------------
 
     @staticmethod
     def _evaluate(
@@ -93,18 +87,15 @@ class FilterTransform(BaseTransform):
         if op == "~":
             return value.search(str(record_value)) is not None
 
-        # Numeric / string comparisons
+        # Promote both sides to float if possible; fall back to originals.
+        left: Any = record_value
+        right: Any = value
         try:
-            left: Any = record_value
-            right: Any = value
-            # Promote to float when both sides look numeric.
-            if isinstance(left, str):
-                left = float(left)
-            if isinstance(right, str):
-                right = float(right)
+            coerced_left = float(left) if isinstance(left, str) else left
+            coerced_right = float(right) if isinstance(right, str) else right
+            left, right = coerced_left, coerced_right
         except (ValueError, TypeError):
-            left = record_value
-            right = value
+            pass
 
         if op == ">":
             return left > right  # type: ignore[operator]
@@ -121,9 +112,6 @@ class FilterTransform(BaseTransform):
 
         raise ValueError(f"Unsupported operator: {op!r}")
 
-    # ------------------------------------------------------------------
-    # Execute
-    # ------------------------------------------------------------------
 
     def execute(
         self,
@@ -137,10 +125,6 @@ class FilterTransform(BaseTransform):
             if self._evaluate(record, self._field, self._op, self._value)
         ]
 
-
-# ------------------------------------------------------------------
-# Helpers
-# ------------------------------------------------------------------
 
 def _coerce_value(raw: str) -> Any:
     """Coerce a string literal into a Python value.

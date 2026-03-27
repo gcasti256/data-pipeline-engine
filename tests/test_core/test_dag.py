@@ -11,11 +11,6 @@ def _noop(ctx):
     return None
 
 
-# ---------------------------------------------------------------------------
-# Node construction
-# ---------------------------------------------------------------------------
-
-
 class TestNode:
     def test_create_valid_node(self):
         node = Node(id="extract", operation=_noop)
@@ -39,11 +34,6 @@ class TestNode:
     def test_non_positive_timeout_raises(self):
         with pytest.raises(ValueError, match="timeout must be positive"):
             Node(id="x", operation=_noop, timeout=0)
-
-
-# ---------------------------------------------------------------------------
-# DAG mutation
-# ---------------------------------------------------------------------------
 
 
 class TestDAGMutation:
@@ -93,11 +83,6 @@ class TestDAGMutation:
             dag.add_edge("a", "b")
 
 
-# ---------------------------------------------------------------------------
-# Topological sort
-# ---------------------------------------------------------------------------
-
-
 class TestTopologicalSort:
     def test_simple_chain(self, simple_dag: DAG):
         order = simple_dag.topological_sort()
@@ -128,11 +113,6 @@ class TestTopologicalSort:
         assert dag.topological_sort() == ["only"]
 
 
-# ---------------------------------------------------------------------------
-# Query methods
-# ---------------------------------------------------------------------------
-
-
 class TestDAGQueries:
     def test_get_roots(self, simple_dag: DAG):
         assert simple_dag.get_roots() == {"extract"}
@@ -153,11 +133,6 @@ class TestDAGQueries:
 
     def test_get_dependents(self, diamond_dag: DAG):
         assert diamond_dag.get_dependents("A") == {"B", "C"}
-
-
-# ---------------------------------------------------------------------------
-# Validation
-# ---------------------------------------------------------------------------
 
 
 class TestDAGValidation:

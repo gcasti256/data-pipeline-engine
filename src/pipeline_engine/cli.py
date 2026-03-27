@@ -26,20 +26,10 @@ def _run_async(coro: Any) -> Any:
     return asyncio.run(coro)
 
 
-# ---------------------------------------------------------------------------
-# CLI group
-# ---------------------------------------------------------------------------
-
-
 @click.group()
 @click.version_option(version="0.1.0", prog_name="pipeline")
 def cli() -> None:
     """Pipeline Engine CLI -- run, validate, and monitor data pipelines."""
-
-
-# ---------------------------------------------------------------------------
-# pipeline run
-# ---------------------------------------------------------------------------
 
 
 @cli.command()
@@ -119,11 +109,6 @@ async def _run_pipeline(config_path: str, db_path: str, max_parallel: int) -> No
     _print_run_summary(state.to_dict())
 
 
-# ---------------------------------------------------------------------------
-# pipeline validate
-# ---------------------------------------------------------------------------
-
-
 @cli.command()
 @click.option(
     "--config",
@@ -153,11 +138,6 @@ def validate(config_path: str) -> None:
     console.print(f"  Sources:    {len(config.sources)}")
     console.print(f"  Transforms: {len(config.transforms)}")
     console.print(f"  Sinks:      {len(config.sinks)}")
-
-
-# ---------------------------------------------------------------------------
-# pipeline status
-# ---------------------------------------------------------------------------
 
 
 @cli.command()
@@ -192,11 +172,6 @@ async def _show_status(run_id: str, db_path: str) -> None:
         sys.exit(1)
 
     _print_run_detail(run_data)
-
-
-# ---------------------------------------------------------------------------
-# pipeline list
-# ---------------------------------------------------------------------------
 
 
 @cli.command(name="list")
@@ -258,11 +233,6 @@ async def _list_runs(limit: int, db_path: str) -> None:
     console.print(table)
 
 
-# ---------------------------------------------------------------------------
-# pipeline monitor
-# ---------------------------------------------------------------------------
-
-
 @cli.command()
 @click.option("--host", default="0.0.0.0", show_default=True, help="Bind host.")
 @click.option("--port", default=8080, show_default=True, type=int, help="Bind port.")
@@ -287,11 +257,6 @@ def monitor(host: str, port: int) -> None:
         port=port,
         log_level="info",
     )
-
-
-# ---------------------------------------------------------------------------
-# Rich output helpers
-# ---------------------------------------------------------------------------
 
 
 def _status_style(status_value: str) -> str:

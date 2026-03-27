@@ -36,9 +36,6 @@ class DeduplicateTransform(BaseTransform):
         self._keys = keys
         self._keep = keep
 
-    # ------------------------------------------------------------------
-    # Execution
-    # ------------------------------------------------------------------
 
     def execute(
         self,
@@ -51,9 +48,6 @@ class DeduplicateTransform(BaseTransform):
             return self._dedup_first(data)
         return self._dedup_last(data)
 
-    # ------------------------------------------------------------------
-    # Strategies
-    # ------------------------------------------------------------------
 
     def _make_key(self, record: dict[str, Any]) -> tuple[Any, ...]:
         return tuple(record.get(k) for k in self._keys)

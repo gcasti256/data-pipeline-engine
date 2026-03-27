@@ -6,10 +6,6 @@ import pytest
 
 from pipeline_engine.transforms.aggregate import AggregateTransform
 
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
-
 
 class TestAggregateTransform:
     def test_sum_aggregation(self):

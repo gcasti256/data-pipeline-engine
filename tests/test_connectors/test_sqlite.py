@@ -6,10 +6,6 @@ import pytest
 
 from pipeline_engine.connectors.sqlite_connector import SQLiteConnector
 
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
-
 
 class TestSQLiteConnector:
     @pytest.mark.asyncio

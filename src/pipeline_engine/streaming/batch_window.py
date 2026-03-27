@@ -56,9 +56,6 @@ class BatchWindow:
         self._batch_start: float | None = None
         self._lock = threading.Lock()
 
-    # ------------------------------------------------------------------
-    # Public API
-    # ------------------------------------------------------------------
 
     def add(self, record: dict[str, Any]) -> list[dict[str, Any]] | None:
         """Add a record to the current batch.
@@ -111,9 +108,6 @@ class BatchWindow:
         """Configured maximum wait time in seconds."""
         return self._max_wait_seconds
 
-    # ------------------------------------------------------------------
-    # Internals
-    # ------------------------------------------------------------------
 
     def _check_time_window(self) -> bool:
         """Return ``True`` if the time window has been exceeded.

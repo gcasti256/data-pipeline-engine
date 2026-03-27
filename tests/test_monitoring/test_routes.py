@@ -9,10 +9,6 @@ from pipeline_engine.core.state import PipelineState
 from pipeline_engine.monitoring.app import create_app
 from pipeline_engine.monitoring.metrics import MetricsCollector
 
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
 
 @pytest.fixture(autouse=True)
 def reset_metrics():
@@ -43,11 +39,6 @@ def _make_completed_state(name: str = "test_pipeline") -> PipelineState:
     state.mark_running("step1")
     state.mark_completed("step1", output_records=3)
     return state
-
-
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
 
 
 class TestMonitoringRoutes:

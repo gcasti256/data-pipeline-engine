@@ -67,9 +67,6 @@ class PipelineDB:
         self._db_path = db_path
         self._conn: aiosqlite.Connection | None = None
 
-    # ------------------------------------------------------------------
-    # Lifecycle
-    # ------------------------------------------------------------------
 
     async def init(self) -> None:
         """Create the database tables if they do not exist.
@@ -95,9 +92,6 @@ class PipelineDB:
     async def __aexit__(self, *args: Any) -> None:
         await self.close()
 
-    # ------------------------------------------------------------------
-    # Write
-    # ------------------------------------------------------------------
 
     async def save_run(self, state: PipelineState) -> None:
         """Persist a pipeline run and its node states.
@@ -157,9 +151,6 @@ class PipelineDB:
         await conn.commit()
         logger.debug("Saved run %s to database", state.run_id)
 
-    # ------------------------------------------------------------------
-    # Read
-    # ------------------------------------------------------------------
 
     async def get_run(self, run_id: str) -> dict[str, Any] | None:
         """Retrieve a pipeline run with its node states.
@@ -188,10 +179,10 @@ class PipelineDB:
             (run_id,),
         )
         node_rows = await node_cursor.fetchall()
+        node_cols = self._columns_from_cursor(node_cursor)
+        node_id_idx = node_cols.index("node_id")
         run_data["nodes"] = {
-            self._column_value(node_cursor, nr, "node_id"): self._row_to_node_dict(
-                node_cursor, nr
-            )
+            nr[node_id_idx]: self._row_to_node_dict(node_cursor, nr)
             for nr in node_rows
         }
 
@@ -241,9 +232,6 @@ class PipelineDB:
         rows = await cursor.fetchall()
         return [self._row_to_run_dict(cursor, row) for row in rows]
 
-    # ------------------------------------------------------------------
-    # Helpers
-    # ------------------------------------------------------------------
 
     def _get_conn(self) -> aiosqlite.Connection:
         """Return the active connection, raising if not initialized."""
@@ -254,31 +242,29 @@ class PipelineDB:
         return self._conn
 
     @staticmethod
-    def _column_value(cursor: Any, row: Any, column: str) -> Any:
-        """Extract a column value from a row by column name."""
-        columns = [desc[0] for desc in cursor.description]
-        idx = columns.index(column)
-        return row[idx]
+    def _columns_from_cursor(cursor: Any) -> list[str]:
+        return [desc[0] for desc in cursor.description]
 
     @staticmethod
     def _row_to_run_dict(cursor: Any, row: Any) -> dict[str, Any]:
         """Convert a pipeline_runs row to a dict."""
-        columns = [desc[0] for desc in cursor.description]
+        columns = PipelineDB._columns_from_cursor(cursor)
         data = dict(zip(columns, row))
-        # Parse the JSON summary back into a dict.
         if data.get("summary") and isinstance(data["summary"], str):
             try:
                 data["summary"] = json.loads(data["summary"])
             except json.JSONDecodeError:
-                pass
+                logger.warning(
+                    "Failed to decode summary JSON for run %s",
+                    data.get("run_id"),
+                )
         return data
 
     @staticmethod
     def _row_to_node_dict(cursor: Any, row: Any) -> dict[str, Any]:
         """Convert a node_runs row to a dict."""
-        columns = [desc[0] for desc in cursor.description]
+        columns = PipelineDB._columns_from_cursor(cursor)
         data = dict(zip(columns, row))
-        # Remove run_id from node data (redundant in nested context).
         data.pop("run_id", None)
         return data
 

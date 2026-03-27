@@ -8,10 +8,6 @@ import respx
 
 from pipeline_engine.connectors.rest_connector import RESTConnector
 
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
-
 
 class TestRESTConnector:
     @pytest.mark.asyncio

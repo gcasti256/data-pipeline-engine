@@ -43,9 +43,6 @@ class JoinTransform(BaseTransform):
         self._how = how
         self._suffixes = suffixes
 
-    # ------------------------------------------------------------------
-    # Execution
-    # ------------------------------------------------------------------
 
     def execute(
         self,
@@ -97,9 +94,6 @@ class JoinTransform(BaseTransform):
 
         return results
 
-    # ------------------------------------------------------------------
-    # Helpers
-    # ------------------------------------------------------------------
 
     def _make_key(self, record: dict[str, Any]) -> tuple[Any, ...]:
         return tuple(record.get(col) for col in self._on)

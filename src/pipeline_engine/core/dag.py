@@ -87,9 +87,6 @@ class DAG:
         self._forward: dict[str, set[str]] = {}  # node -> direct successors
         self._reverse: dict[str, set[str]] = {}  # node -> direct predecessors
 
-    # ------------------------------------------------------------------
-    # Mutation
-    # ------------------------------------------------------------------
 
     def add_node(self, node: Node) -> None:
         """Register a node in the DAG.
@@ -125,9 +122,6 @@ class DAG:
         self._reverse[to_id].add(from_id)
         logger.debug("Added edge '%s' -> '%s' in DAG '%s'", from_id, to_id, self.name)
 
-    # ------------------------------------------------------------------
-    # Query
-    # ------------------------------------------------------------------
 
     @property
     def nodes(self) -> dict[str, Node]:
@@ -163,9 +157,6 @@ class DAG:
         """Return nodes with zero incoming edges (entry points of the pipeline)."""
         return {nid for nid, preds in self._reverse.items() if not preds}
 
-    # ------------------------------------------------------------------
-    # Topological sort (Kahn's algorithm)
-    # ------------------------------------------------------------------
 
     def topological_sort(self) -> list[str]:
         """Return a valid topological execution order using Kahn's algorithm.
@@ -192,9 +183,6 @@ class DAG:
 
         return order
 
-    # ------------------------------------------------------------------
-    # Validation
-    # ------------------------------------------------------------------
 
     def validate(self) -> list[str]:
         """Validate the DAG structure.
@@ -227,9 +215,6 @@ class DAG:
 
         return warnings
 
-    # ------------------------------------------------------------------
-    # Dunder methods
-    # ------------------------------------------------------------------
 
     def __len__(self) -> int:
         return len(self._nodes)

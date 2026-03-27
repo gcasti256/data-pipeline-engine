@@ -92,9 +92,6 @@ class PipelineState:
         self.completed_at: datetime | None = None
         self.node_states: dict[str, NodeState] = {}
 
-    # ------------------------------------------------------------------
-    # Initialization
-    # ------------------------------------------------------------------
 
     def initialize(self, dag: DAG) -> None:
         """Create a PENDING NodeState for every node in the DAG.
@@ -107,9 +104,6 @@ class PipelineState:
         }
         self.status = RunStatus.PENDING
 
-    # ------------------------------------------------------------------
-    # State transitions
-    # ------------------------------------------------------------------
 
     def mark_running(self, node_id: str) -> None:
         """Transition a node to RUNNING status.
@@ -190,9 +184,6 @@ class PipelineState:
         self.status = RunStatus.CANCELLED
         self.completed_at = datetime.now(UTC)
 
-    # ------------------------------------------------------------------
-    # Queries
-    # ------------------------------------------------------------------
 
     def get_ready_nodes(self, dag: DAG) -> list[str]:
         """Return node ids whose dependencies are all COMPLETED and which are still PENDING.
@@ -224,9 +215,6 @@ class PipelineState:
         """True if the run has reached a final state (completed, failed, or cancelled)."""
         return self.status in (RunStatus.COMPLETED, RunStatus.FAILED, RunStatus.CANCELLED)
 
-    # ------------------------------------------------------------------
-    # Serialization
-    # ------------------------------------------------------------------
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize the full pipeline state to a plain dict."""
@@ -249,9 +237,6 @@ class PipelineState:
             },
         }
 
-    # ------------------------------------------------------------------
-    # Internals
-    # ------------------------------------------------------------------
 
     def _get_node_state(self, node_id: str) -> NodeState:
         """Retrieve a NodeState or raise KeyError with a clear message."""

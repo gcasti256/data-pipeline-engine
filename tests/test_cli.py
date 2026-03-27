@@ -7,11 +7,6 @@ from click.testing import CliRunner
 
 from pipeline_engine.cli import cli
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
 _VALID_CONFIG = {
     "name": "cli_test_pipeline",
     "version": "1.0",
@@ -44,11 +39,6 @@ def _write_config(tmp_path, data: dict | None = None) -> str:
     p = tmp_path / "pipeline.yaml"
     p.write_text(yaml.dump(data or _VALID_CONFIG, default_flow_style=False))
     return str(p)
-
-
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
 
 
 class TestCLI:
@@ -97,7 +87,7 @@ class TestCLI:
         result = runner.invoke(cli, ["list", "--db", db_path])
 
         assert result.exit_code == 0
-        assert "No pipeline runs" in result.output or result.output.strip() != ""
+        assert "No pipeline runs" in result.output
 
     def test_version_flag(self):
         """--version prints the version and exits."""

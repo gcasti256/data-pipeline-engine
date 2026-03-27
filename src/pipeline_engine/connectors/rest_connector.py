@@ -32,9 +32,6 @@ class RESTConnector(BaseConnector):
         self.rate_limit = rate_limit
         self._client: httpx.AsyncClient | None = None
 
-    # ------------------------------------------------------------------
-    # Internal helpers
-    # ------------------------------------------------------------------
 
     def _build_auth_headers(self) -> dict[str, str]:
         """Construct authentication headers from *auth_type* / *auth_token*."""
@@ -65,9 +62,6 @@ class RESTConnector(BaseConnector):
         if self.rate_limit > 0:
             await asyncio.sleep(self.rate_limit)
 
-    # ------------------------------------------------------------------
-    # Read
-    # ------------------------------------------------------------------
 
     async def read(
         self,
@@ -107,9 +101,7 @@ class RESTConnector(BaseConnector):
             data = response.json()
             return self._extract_results(data, results_key)
 
-        page = params.pop(page_key, 1)
-        if isinstance(page, str) and page.isdigit():
-            page = int(page)
+        page = int(params.pop(page_key, 1))
 
         for _ in range(max_pages):
             await self._rate_limit_wait()
@@ -123,7 +115,7 @@ class RESTConnector(BaseConnector):
                 break
 
             all_records.extend(page_records)
-            page += 1  # type: ignore[operator]
+            page += 1
 
         return all_records
 
@@ -157,9 +149,6 @@ class RESTConnector(BaseConnector):
             return [current]
         return []
 
-    # ------------------------------------------------------------------
-    # Write
-    # ------------------------------------------------------------------
 
     async def write(
         self,
@@ -202,9 +191,6 @@ class RESTConnector(BaseConnector):
 
         return written
 
-    # ------------------------------------------------------------------
-    # Lifecycle
-    # ------------------------------------------------------------------
 
     async def close(self) -> None:
         """Close the underlying HTTP client."""

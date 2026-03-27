@@ -4,10 +4,6 @@ from __future__ import annotations
 
 from pipeline_engine.transforms.map import MapTransform
 
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
-
 
 class TestMapTransform:
     def test_computed_column(self):

@@ -32,9 +32,6 @@ class MetricsCollector:
         self._runs: dict[str, dict[str, Any]] = {}
         self._lock = threading.Lock()
 
-    # ------------------------------------------------------------------
-    # Singleton accessor
-    # ------------------------------------------------------------------
 
     @classmethod
     def get_instance(cls) -> MetricsCollector:
@@ -54,9 +51,6 @@ class MetricsCollector:
         with cls._init_lock:
             cls._instance = None
 
-    # ------------------------------------------------------------------
-    # Recording
-    # ------------------------------------------------------------------
 
     def record_run(self, state: PipelineState) -> None:
         """Store a completed pipeline run.
@@ -68,9 +62,6 @@ class MetricsCollector:
         with self._lock:
             self._runs[state.run_id] = run_data
 
-    # ------------------------------------------------------------------
-    # Queries
-    # ------------------------------------------------------------------
 
     def get_runs(self) -> list[dict[str, Any]]:
         """Return all recorded runs, newest first.
@@ -133,7 +124,7 @@ class MetricsCollector:
         )
 
         durations: list[float] = [
-            r["duration_seconds"]
+            r.get("duration_seconds", 0.0)
             for r in runs
             if r.get("duration_seconds") is not None
         ]

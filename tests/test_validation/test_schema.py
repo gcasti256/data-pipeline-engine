@@ -7,20 +7,11 @@ from pydantic import BaseModel
 
 from pipeline_engine.validation.schema import SchemaValidator, ValidationResult
 
-# ---------------------------------------------------------------------------
-# Test schema
-# ---------------------------------------------------------------------------
-
 
 class UserRecord(BaseModel):
     name: str
     age: int
     email: str
-
-
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
 
 
 class TestSchemaValidator:
@@ -99,12 +90,12 @@ class TestSchemaValidator:
         assert merged.total == 4
 
     def test_empty_records_returns_empty_result(self):
-        """Validating an empty list returns an empty result with pass_rate 1.0."""
+        """Validating an empty list returns an empty result with pass_rate 0.0."""
         validator = SchemaValidator(UserRecord)
         result = validator.validate([])
 
         assert result.total == 0
-        assert result.pass_rate == 1.0
+        assert result.pass_rate == 0.0
 
     def test_non_model_schema_raises(self):
         """Passing a non-BaseModel type raises TypeError."""

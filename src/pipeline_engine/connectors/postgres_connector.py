@@ -45,9 +45,6 @@ class PostgresConnector(BaseConnector):
         self.dsn = dsn
         self._pool: asyncpg.Pool | None = None  # type: ignore[name-defined]
 
-    # ------------------------------------------------------------------
-    # Internal helpers
-    # ------------------------------------------------------------------
 
     async def _get_pool(self) -> asyncpg.Pool:  # type: ignore[name-defined]
         _require_asyncpg()
@@ -64,9 +61,6 @@ class PostgresConnector(BaseConnector):
             schema[key] = _PYTHON_TO_PG.get(py_type, "TEXT")
         return schema
 
-    # ------------------------------------------------------------------
-    # DDL
-    # ------------------------------------------------------------------
 
     async def create_table(
         self, table: str, schema: dict[str, str]
@@ -87,9 +81,6 @@ class PostgresConnector(BaseConnector):
                 f'CREATE TABLE IF NOT EXISTS "{table}" ({columns})'
             )
 
-    # ------------------------------------------------------------------
-    # Read
-    # ------------------------------------------------------------------
 
     async def read(
         self,
@@ -151,9 +142,6 @@ class PostgresConnector(BaseConnector):
                         break
                     yield [dict(row) for row in rows]
 
-    # ------------------------------------------------------------------
-    # Write
-    # ------------------------------------------------------------------
 
     async def write(
         self,
@@ -245,9 +233,6 @@ class PostgresConnector(BaseConnector):
 
         return len(records)
 
-    # ------------------------------------------------------------------
-    # Lifecycle
-    # ------------------------------------------------------------------
 
     async def close(self) -> None:
         """Close the connection pool."""

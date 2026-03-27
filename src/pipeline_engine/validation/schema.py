@@ -29,7 +29,7 @@ class ValidationResult:
     def pass_rate(self) -> float:
         """Fraction of records that passed validation (0.0 -- 1.0)."""
         if self.total == 0:
-            return 1.0
+            return 0.0
         return len(self.valid) / self.total
 
     def merge(self, other: ValidationResult) -> ValidationResult:

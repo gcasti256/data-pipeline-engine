@@ -8,10 +8,6 @@ import pytest
 
 from pipeline_engine.connectors.json_connector import JSONConnector
 
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
-
 
 class TestJSONConnector:
     @pytest.mark.asyncio

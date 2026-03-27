@@ -60,11 +60,6 @@ except ImportError:  # pragma: no cover — optional dependency
     pass
 
 
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
-
-
 def parse_config(path: str) -> PipelineConfig:
     """Read a YAML file and return a validated :class:`PipelineConfig`.
 
@@ -207,9 +202,6 @@ def build_dag(
     dag = DAG(name=config.name)
     context: dict[str, Any] = {}
 
-    # ------------------------------------------------------------------
-    # 1. Sources
-    # ------------------------------------------------------------------
     for name, sc in config.sources.items():
         connector = _build_connector(sc, role="source")
         operation = _make_source_operation(connector)
@@ -217,9 +209,6 @@ def build_dag(
         dag.add_node(node)
         context[name] = {"instance": connector, "role": "source"}
 
-    # ------------------------------------------------------------------
-    # 2. Transforms
-    # ------------------------------------------------------------------
     for tc in config.transforms:
         transform = _build_transform(tc)
         operation = _make_transform_operation(transform)
@@ -231,9 +220,6 @@ def build_dag(
         if tc.input:
             dag.add_edge(tc.input, tc.name)
 
-    # ------------------------------------------------------------------
-    # 3. Sinks
-    # ------------------------------------------------------------------
     for name, sink_cfg in config.sinks.items():
         connector = _build_connector(sink_cfg, role="sink")
         operation = _make_sink_operation(connector, sink_cfg)
@@ -246,11 +232,6 @@ def build_dag(
             dag.add_edge(sink_cfg.input, name)
 
     return dag, context
-
-
-# ---------------------------------------------------------------------------
-# Builder helpers
-# ---------------------------------------------------------------------------
 
 
 def _build_connector(
@@ -357,10 +338,6 @@ def _build_transform(tc: TransformConfig) -> BaseTransform:
 
     raise ValueError(f"Unknown transform type: '{t_type}'")
 
-
-# ---------------------------------------------------------------------------
-# Operation wrappers
-# ---------------------------------------------------------------------------
 
 def _make_source_operation(connector: BaseConnector) -> Any:
     """Create an async operation callable for a source connector node."""

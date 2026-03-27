@@ -35,11 +35,6 @@ class ValidationRule(ABC):
         return f"{self.__class__.__name__}(name={self.name!r})"
 
 
-# ---------------------------------------------------------------------------
-# Concrete rules
-# ---------------------------------------------------------------------------
-
-
 class RangeRule(ValidationRule):
     """Validate that a numeric field falls within an inclusive range.
 
@@ -167,11 +162,6 @@ class CustomRule(ValidationRule):
 
     def check(self, record: dict[str, Any]) -> tuple[bool, str]:
         return self._check_fn(record)
-
-
-# ---------------------------------------------------------------------------
-# RuleSet
-# ---------------------------------------------------------------------------
 
 
 class RuleSet:

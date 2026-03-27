@@ -53,9 +53,6 @@ class DeadLetterQueue:
         self._entries: list[DeadLetterEntry] = []
         self._lock = threading.Lock()
 
-    # ------------------------------------------------------------------
-    # Mutation
-    # ------------------------------------------------------------------
 
     def add(
         self,
@@ -74,7 +71,7 @@ class DeadLetterQueue:
             source: Optional identifier for the originating stage.
         """
         entry = DeadLetterEntry(
-            record=record,
+            record=dict(record),
             error=error,
             source=source,
         )
@@ -94,9 +91,6 @@ class DeadLetterQueue:
             self._entries.clear()
         return entries
 
-    # ------------------------------------------------------------------
-    # Query
-    # ------------------------------------------------------------------
 
     def get_all(self) -> list[DeadLetterEntry]:
         """Return a snapshot of all entries without clearing."""
@@ -126,9 +120,6 @@ class DeadLetterQueue:
         """Maximum capacity of the queue."""
         return self._max_size
 
-    # ------------------------------------------------------------------
-    # Serialization
-    # ------------------------------------------------------------------
 
     def to_records(self) -> list[dict[str, Any]]:
         """Serialize all entries to plain dicts suitable for export.
@@ -150,9 +141,6 @@ class DeadLetterQueue:
                 for entry in self._entries
             ]
 
-    # ------------------------------------------------------------------
-    # Dunder
-    # ------------------------------------------------------------------
 
     def __len__(self) -> int:
         return self.size

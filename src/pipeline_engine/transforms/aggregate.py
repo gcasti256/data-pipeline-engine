@@ -22,10 +22,6 @@ class AggregateTransform(BaseTransform):
         ``first``, ``last``.  ``count()`` may omit the column name.
     """
 
-    _AGG_FUNCTIONS: dict[str, str] = {
-        "sum", "avg", "count", "min", "max", "first", "last",  # type: ignore[assignment]
-    }
-
     def __init__(
         self,
         group_by: list[str],
@@ -40,9 +36,6 @@ class AggregateTransform(BaseTransform):
             func, col = self._parse_aggregation(expr)
             self._parsed.append((out_col, func, col))
 
-    # ------------------------------------------------------------------
-    # Parsing
-    # ------------------------------------------------------------------
 
     @staticmethod
     def _parse_aggregation(expr: str) -> tuple[str, str | None]:
@@ -67,9 +60,6 @@ class AggregateTransform(BaseTransform):
             )
         return func, col
 
-    # ------------------------------------------------------------------
-    # Execution
-    # ------------------------------------------------------------------
 
     def execute(
         self,
@@ -106,7 +96,8 @@ class AggregateTransform(BaseTransform):
         if func == "count":
             return len(rows)
 
-        assert column is not None  # enforced at parse time
+        if column is None:
+            raise ValueError(f"Aggregation '{func}' requires a column argument")
         values: list[Any] = [
             r[column] for r in rows if column in r and r[column] is not None
         ]

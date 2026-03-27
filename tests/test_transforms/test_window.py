@@ -6,10 +6,6 @@ import pytest
 
 from pipeline_engine.transforms.window import WindowTransform
 
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
-
 
 class TestWindowTransform:
     def test_sliding_window_avg(self):
