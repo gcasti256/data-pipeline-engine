@@ -1,0 +1,39 @@
+pipeline:
+  name: sales_etl
+  version: "1.0"
+
+sources:
+  raw_sales:
+    type: csv
+    path: data/sales.csv
+    delimiter: ","
+
+transforms:
+  - name: remove_negatives
+    type: filter
+    input: raw_sales
+    condition: "amount > 0"
+
+  - name: calculate_totals
+    type: map
+    input: remove_negatives
+    columns:
+      total: "price * quantity"
+      region_upper: "upper(region)"
+
+  - name: by_region
+    type: aggregate
+    input: calculate_totals
+    group_by:
+      - region_upper
+    aggregations:
+      total_sales: "sum(total)"
+      avg_sale: "avg(total)"
+      order_count: "count()"
+
+sinks:
+  warehouse:
+    type: sqlite
+    input: by_region
+    database: data/output.db
+    table: regional_sales
