@@ -10,6 +10,8 @@ from pydantic import BaseModel, Field
 class KafkaConfig(BaseModel):
     """Kafka-specific configuration for source or sink connectors."""
 
+    model_config = {"populate_by_name": True}
+
     brokers: list[str] = Field(
         default_factory=lambda: ["localhost:9092"],
         description="List of Kafka broker addresses",
@@ -26,8 +28,9 @@ class KafkaConfig(BaseModel):
         default="json",
         description="Serialization format: 'json', 'avro', 'raw'",
     )
-    schema: dict[str, Any] | None = Field(
+    schema_config: dict[str, Any] | None = Field(
         default=None,
+        alias="schema",
         description="Schema configuration (type + path)",
     )
     condition: str | None = Field(
@@ -126,6 +129,8 @@ class TransformConfig(BaseModel):
     Remaining fields are type-specific and optional.
     """
 
+    model_config = {"populate_by_name": True}
+
     name: str = Field(
         ...,
         description="Unique name for this transform step",
@@ -203,8 +208,9 @@ class TransformConfig(BaseModel):
     )
 
     # --- schema_validation ---
-    schema: str | None = Field(
+    schema_path: str | None = Field(
         default=None,
+        alias="schema",
         description="Schema file path (for 'schema_validation' type)",
     )
     on_failure: str | None = Field(
@@ -228,7 +234,7 @@ class SinkConfig(BaseModel):
 
     type: str = Field(
         ...,
-        description="Connector type: 'csv', 'json', 'sqlite', 'postgres', 'rest'",
+        description="Connector type: 'csv', 'json', 'sqlite', 'postgres', 'rest', 'kafka'",
     )
     input: str | None = Field(
         default=None,
@@ -249,6 +255,10 @@ class SinkConfig(BaseModel):
     url: str | None = Field(
         default=None,
         description="URL endpoint (for REST connector)",
+    )
+    config: KafkaConfig | None = Field(
+        default=None,
+        description="Kafka-specific configuration (for kafka connector)",
     )
     extra: dict[str, Any] = Field(
         default_factory=dict,
@@ -287,6 +297,10 @@ class PipelineConfig(BaseModel):
         default="1.0",
         description="Configuration version string",
     )
+    mode: str = Field(
+        default="batch",
+        description="Pipeline mode: 'batch' (default) or 'streaming'",
+    )
     sources: dict[str, SourceConfig] = Field(
         ...,
         description="Named data source definitions",
@@ -298,4 +312,8 @@ class PipelineConfig(BaseModel):
     sinks: dict[str, SinkConfig] = Field(
         ...,
         description="Named data sink definitions",
+    )
+    dead_letter: DeadLetterConfig | None = Field(
+        default=None,
+        description="Dead letter configuration for failed records",
     )

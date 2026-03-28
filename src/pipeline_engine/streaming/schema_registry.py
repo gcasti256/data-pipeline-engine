@@ -184,10 +184,29 @@ class SchemaRegistryClient:
     def __init__(self, url: str) -> None:
         self._url = url.rstrip("/")
         self._cache: dict[int, SchemaVersion] = {}
+        self._client: httpx.AsyncClient | None = None
 
     @property
     def url(self) -> str:
         return self._url
+
+    def _get_client(self) -> httpx.AsyncClient:
+        """Return a shared httpx client, creating one on first use."""
+        if self._client is None or self._client.is_closed:
+            self._client = httpx.AsyncClient()
+        return self._client
+
+    async def close(self) -> None:
+        """Close the underlying HTTP client."""
+        if self._client and not self._client.is_closed:
+            await self._client.aclose()
+            self._client = None
+
+    async def __aenter__(self) -> SchemaRegistryClient:
+        return self
+
+    async def __aexit__(self, *args: Any) -> None:
+        await self.close()
 
     async def register(
         self,
@@ -205,14 +224,14 @@ class SchemaRegistryClient:
         if schema_type == SchemaType.JSON_SCHEMA:
             body["schemaType"] = "JSON"
 
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(
-                f"{self._url}/subjects/{subject}/versions",
-                json=body,
-                headers={"Content-Type": "application/vnd.schemaregistry.v1+json"},
-            )
-            resp.raise_for_status()
-            return resp.json()["id"]
+        client = self._get_client()
+        resp = await client.post(
+            f"{self._url}/subjects/{subject}/versions",
+            json=body,
+            headers={"Content-Type": "application/vnd.schemaregistry.v1+json"},
+        )
+        resp.raise_for_status()
+        return resp.json()["id"]
 
     async def get_schema(self, schema_id: int) -> SchemaVersion:
         """Retrieve a schema by its global ID.
@@ -222,10 +241,10 @@ class SchemaRegistryClient:
         if schema_id in self._cache:
             return self._cache[schema_id]
 
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(f"{self._url}/schemas/ids/{schema_id}")
-            resp.raise_for_status()
-            data = resp.json()
+        client = self._get_client()
+        resp = await client.get(f"{self._url}/schemas/ids/{schema_id}")
+        resp.raise_for_status()
+        data = resp.json()
 
         schema_str = data["schema"]
         schema_type_str = data.get("schemaType", "AVRO")
@@ -242,12 +261,12 @@ class SchemaRegistryClient:
 
     async def get_latest_version(self, subject: str) -> SchemaVersion:
         """Get the latest schema version for a subject."""
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(
-                f"{self._url}/subjects/{subject}/versions/latest"
-            )
-            resp.raise_for_status()
-            data = resp.json()
+        client = self._get_client()
+        resp = await client.get(
+            f"{self._url}/subjects/{subject}/versions/latest"
+        )
+        resp.raise_for_status()
+        data = resp.json()
 
         schema_type_str = data.get("schemaType", "AVRO")
         sv = SchemaVersion(
@@ -262,12 +281,12 @@ class SchemaRegistryClient:
 
     async def get_versions(self, subject: str) -> list[int]:
         """List all version numbers for a subject."""
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(
-                f"{self._url}/subjects/{subject}/versions"
-            )
-            resp.raise_for_status()
-            return resp.json()
+        client = self._get_client()
+        resp = await client.get(
+            f"{self._url}/subjects/{subject}/versions"
+        )
+        resp.raise_for_status()
+        return resp.json()
 
     async def check_compatibility(
         self,
@@ -285,33 +304,33 @@ class SchemaRegistryClient:
         if schema_type == SchemaType.JSON_SCHEMA:
             body["schemaType"] = "JSON"
 
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(
-                f"{self._url}/compatibility/subjects/{subject}/versions/latest",
-                json=body,
-                headers={"Content-Type": "application/vnd.schemaregistry.v1+json"},
-            )
-            resp.raise_for_status()
-            return resp.json().get("is_compatible", False)
+        client = self._get_client()
+        resp = await client.post(
+            f"{self._url}/compatibility/subjects/{subject}/versions/latest",
+            json=body,
+            headers={"Content-Type": "application/vnd.schemaregistry.v1+json"},
+        )
+        resp.raise_for_status()
+        return resp.json().get("is_compatible", False)
 
     async def get_subjects(self) -> list[str]:
         """List all registered subjects."""
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(f"{self._url}/subjects")
-            resp.raise_for_status()
-            return resp.json()
+        client = self._get_client()
+        resp = await client.get(f"{self._url}/subjects")
+        resp.raise_for_status()
+        return resp.json()
 
     async def delete_subject(self, subject: str) -> list[int]:
         """Delete a subject and all its versions.
 
         Returns the list of deleted version numbers.
         """
-        async with httpx.AsyncClient() as client:
-            resp = await client.delete(
-                f"{self._url}/subjects/{subject}"
-            )
-            resp.raise_for_status()
-            return resp.json()
+        client = self._get_client()
+        resp = await client.delete(
+            f"{self._url}/subjects/{subject}"
+        )
+        resp.raise_for_status()
+        return resp.json()
 
     def __repr__(self) -> str:
         return f"SchemaRegistryClient(url={self._url!r})"

@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Transaction",
+  "description": "Schema for financial transaction events",
+  "type": "object",
+  "required": ["transaction_id", "amount", "currency", "merchant_category", "timestamp"],
+  "properties": {
+    "transaction_id": {
+      "type": "string",
+      "description": "Unique transaction identifier",
+      "pattern": "^tx-[a-zA-Z0-9]{8,}$"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Transaction amount",
+      "minimum": 0
+    },
+    "currency": {
+      "type": "string",
+      "description": "ISO 4217 currency code",
+      "enum": ["USD", "EUR", "GBP", "JPY", "CAD", "AUD"]
+    },
+    "merchant_category": {
+      "type": "string",
+      "description": "Merchant category code",
+      "enum": ["food", "retail", "travel", "entertainment", "utilities", "healthcare"]
+    },
+    "merchant_name": {
+      "type": "string",
+      "description": "Name of the merchant"
+    },
+    "is_international": {
+      "type": "boolean",
+      "description": "Whether the transaction crosses borders",
+      "default": false
+    },
+    "card_type": {
+      "type": "string",
+      "enum": ["credit", "debit", "prepaid"]
+    },
+    "timestamp": {
+      "type": "number",
+      "description": "Unix epoch timestamp of the transaction"
+    },
+    "customer_id": {
+      "type": "string",
+      "description": "Customer identifier"
+    },
+    "location": {
+      "type": "object",
+      "properties": {
+        "country": {"type": "string"},
+        "city": {"type": "string"},
+        "lat": {"type": "number"},
+        "lon": {"type": "number"}
+      }
+    }
+  },
+  "additionalProperties": false
+}

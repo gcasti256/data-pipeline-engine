@@ -44,6 +44,8 @@ _TRANSFORM_TYPES: dict[str, str] = {
     "join": "join",
     "deduplicate": "deduplicate",
     "window": "window",
+    "schema_validation": "schema_validation",
+    "window_aggregate": "window_aggregate",
 }
 
 # Try to register optional connectors.
@@ -56,6 +58,12 @@ except ImportError:  # pragma: no cover — optional dependency
 try:
     from pipeline_engine.connectors.rest_connector import RESTConnector
     _CONNECTOR_TYPES["rest"] = RESTConnector
+except ImportError:  # pragma: no cover — optional dependency
+    pass
+
+try:
+    from pipeline_engine.connectors.kafka_connector import KafkaSource, KafkaSink
+    _CONNECTOR_TYPES["kafka"] = KafkaSource  # source default; sink uses KafkaSink
 except ImportError:  # pragma: no cover — optional dependency
     pass
 
@@ -117,8 +125,9 @@ def validate_config(config: PipelineConfig) -> list[str]:
         known_names.add(tc.name)
 
     # Check source connector types.
+    all_known_types = set(_CONNECTOR_TYPES) | {"kafka"}
     for name, sc in config.sources.items():
-        if sc.type not in _CONNECTOR_TYPES:
+        if sc.type not in all_known_types:
             warnings.append(
                 f"Source '{name}': unknown connector type '{sc.type}'"
             )
@@ -166,7 +175,7 @@ def validate_config(config: PipelineConfig) -> list[str]:
 
     # Check sink connector types and input references.
     for name, sink in config.sinks.items():
-        if sink.type not in _CONNECTOR_TYPES:
+        if sink.type not in all_known_types:
             warnings.append(
                 f"Sink '{name}': unknown connector type '{sink.type}'"
             )
@@ -277,6 +286,29 @@ def _build_connector(
             raise ValueError(f"REST {role} requires a 'url'")
         from pipeline_engine.connectors.rest_connector import RESTConnector
         return RESTConnector(base_url=cfg.url, config=conn_config)
+
+    if cfg.type == "kafka":
+        kafka_cfg = getattr(cfg, "config", None)
+        if not kafka_cfg:
+            raise ValueError(f"Kafka {role} requires a 'config' block with topic and brokers")
+        from pipeline_engine.connectors.kafka_connector import KafkaSource, KafkaSink
+        if role == "source":
+            return KafkaSource(
+                brokers=kafka_cfg.brokers,
+                topic=kafka_cfg.topic,
+                consumer_group=kafka_cfg.consumer_group,
+                format=kafka_cfg.format,
+                config=conn_config,
+            )
+        else:
+            return KafkaSink(
+                brokers=kafka_cfg.brokers,
+                topic=kafka_cfg.topic,
+                format=kafka_cfg.format,
+                key_field=kafka_cfg.key_field,
+                condition=kafka_cfg.condition,
+                config=conn_config,
+            )
 
     raise ValueError(f"Unhandled connector type: '{cfg.type}'")
 

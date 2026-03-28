@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 import json
 import logging
-import signal
 import time
 from dataclasses import dataclass, field
 from enum import Enum
@@ -268,7 +268,10 @@ class KafkaConsumer:
 
         if records and self._on_message:
             self._metrics.messages_consumed += len(records)
-            await asyncio.to_thread(self._on_message, records) if not asyncio.iscoroutinefunction(self._on_message) else await self._on_message(records)
+            if inspect.iscoroutinefunction(self._on_message):
+                await self._on_message(records)
+            else:
+                await asyncio.to_thread(self._on_message, records)
 
         if (
             self._config.offset_policy == OffsetPolicy.MANUAL

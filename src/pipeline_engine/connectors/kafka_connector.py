@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import ast
 import asyncio
 import json
 import logging
-import time
+import operator
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from typing import Any
@@ -13,6 +14,46 @@ from typing import Any
 from pipeline_engine.connectors.base import BaseConnector, ConnectorConfig
 
 logger = logging.getLogger(__name__)
+
+# Operators allowed in filter condition expressions.
+_COMPARE_OPS: dict[type, Any] = {
+    ast.Gt: operator.gt,
+    ast.Lt: operator.lt,
+    ast.GtE: operator.ge,
+    ast.LtE: operator.le,
+    ast.Eq: operator.eq,
+    ast.NotEq: operator.ne,
+}
+
+
+def _safe_eval_node(node: ast.AST, record: dict[str, Any]) -> Any:
+    """Evaluate an AST node against a record dict.
+
+    Only supports comparisons, boolean logic, field name lookups, and
+    literal values — no function calls, attribute access, or subscripts.
+    """
+    if isinstance(node, ast.Compare):
+        left = _safe_eval_node(node.left, record)
+        for op, comparator in zip(node.ops, node.comparators):
+            right = _safe_eval_node(comparator, record)
+            op_func = _COMPARE_OPS.get(type(op))
+            if op_func is None:
+                raise ValueError(f"Unsupported operator: {type(op).__name__}")
+            if not op_func(left, right):
+                return False
+        return True
+    if isinstance(node, ast.BoolOp):
+        if isinstance(node.op, ast.And):
+            return all(_safe_eval_node(v, record) for v in node.values)
+        if isinstance(node.op, ast.Or):
+            return any(_safe_eval_node(v, record) for v in node.values)
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
+        return not _safe_eval_node(node.operand, record)
+    if isinstance(node, ast.Name):
+        return record.get(node.id)
+    if isinstance(node, ast.Constant):
+        return node.value
+    raise ValueError(f"Unsupported expression node: {type(node).__name__}")
 
 
 @dataclass
@@ -335,7 +376,7 @@ class KafkaSink(BaseConnector):
                     "fastavro is required for Avro serialization. "
                     "Install with: pip install pipeline-engine[kafka]"
                 )
-        return json.dumps(clean, default=str).encode("utf-8")
+        raise ValueError(f"Unknown serialization format: {self._format}")
 
     def _delivery_callback(self, err: Any, msg: Any) -> None:
         if err:
@@ -345,14 +386,17 @@ class KafkaSink(BaseConnector):
             self._delivery_count += 1
 
     def _evaluate_condition(self, record: dict[str, Any]) -> bool:
-        """Evaluate an optional filter condition on a record."""
+        """Evaluate an optional filter condition on a record.
+
+        Uses AST-based safe evaluation — only comparisons, boolean ops,
+        field lookups, and literal values are permitted.
+        """
         if not self._condition:
             return True
 
         try:
-            # Safe evaluation of simple comparison expressions
-            local_vars = dict(record)
-            return bool(eval(self._condition, {"__builtins__": {}}, local_vars))
+            tree = ast.parse(self._condition, mode="eval")
+            return bool(_safe_eval_node(tree.body, record))
         except Exception:
             return False
 

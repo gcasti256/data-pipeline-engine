@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import hashlib
 import logging
 import time
-from collections import defaultdict
+from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -162,8 +161,8 @@ class WindowedAggregator:
         """Compute a group key from the record's group-by fields."""
         if not self._group_by:
             return "__all__"
-        values = tuple(record.get(k, None) for k in self._group_by)
-        return hashlib.md5(str(values).encode()).hexdigest()
+        values = tuple(str(record.get(k, "")) for k in self._group_by)
+        return "|".join(values)
 
     def _get_event_time(self, record: dict[str, Any]) -> float:
         """Extract event time from a record, or use current time."""
@@ -455,7 +454,7 @@ class IdempotentWriter:
         self._id_field = id_field
         self._max_tracked = max_tracked
         self._seen: dict[str, float] = {}
-        self._order: list[str] = []
+        self._order: deque[str] = deque()
 
     def filter_duplicates(
         self, records: list[dict[str, Any]]
@@ -482,7 +481,7 @@ class IdempotentWriter:
 
         # Evict oldest entries if over capacity
         while len(self._order) > self._max_tracked:
-            old_id = self._order.pop(0)
+            old_id = self._order.popleft()
             self._seen.pop(old_id, None)
 
     @property

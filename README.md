@@ -17,6 +17,7 @@ graph TD
         JSON[JSON / JSONL]
         API[REST APIs]
         SQL[(SQLite / PostgreSQL)]
+        KFK_IN>Kafka Topics]
     end
 
     subgraph "DAG Execution Engine"
@@ -35,6 +36,13 @@ graph TD
         DED[Deduplicate]
     end
 
+    subgraph "Stream Processing"
+        WAGG[Windowed Aggregation]
+        SJOIN[Stream Join]
+        SVAL[Schema Validation]
+        WMARK[Watermarks]
+    end
+
     subgraph Validation
         SCH_V[Schema Enforcement]
         RUL[Rule Engine]
@@ -46,12 +54,18 @@ graph TD
         JSON2[JSON / JSONL]
         API2[REST APIs]
         SQL2[(SQLite / PostgreSQL)]
+        KFK_OUT>Kafka Topics]
     end
 
-    CSV & JSON & API & SQL --> SCH
+    CSV & JSON & API & SQL & KFK_IN --> SCH
     T1 & T2 & T3 --> FIL & MAP & AGG & JOIN & WIN & DED
+    KFK_IN --> WAGG & SJOIN
+    WAGG & SJOIN --> SVAL
+    SVAL --> |valid| KFK_OUT
+    SVAL --> |invalid| DLQ
+    WMARK -.-> WAGG
     FIL & MAP & AGG & JOIN & WIN & DED --> SCH_V
-    SCH_V --> |valid| SQL2 & CSV2 & JSON2 & API2
+    SCH_V --> |valid| SQL2 & CSV2 & JSON2 & API2 & KFK_OUT
     SCH_V --> |invalid| DLQ
     RUL --> SCH_V
 
@@ -61,12 +75,14 @@ graph TD
 ## Features
 
 - **DAG Execution Engine** — Topologically sorted task execution with configurable parallelism, per-node retry with exponential backoff, and comprehensive state tracking
-- **5 Built-in Connectors** — CSV, JSON/JSONL, REST API (with pagination & auth), SQLite, PostgreSQL
+- **7 Built-in Connectors** — CSV, JSON/JSONL, REST API (with pagination & auth), SQLite, PostgreSQL, Kafka (source + sink)
 - **6 Transform Operations** — Filter (expressions), Map (computed columns), Aggregate (group-by), Join (hash-based), Window (sliding), Deduplicate
+- **Event-Driven Streaming** — Kafka consumer/producer with JSON and Avro serialization, windowed aggregations (tumbling, sliding, session), stream joins, watermarks, and exactly-once semantics
+- **Schema Registry** — JSON Schema and Avro validation with Confluent Schema Registry compatibility, schema versioning and evolution
 - **Data Validation** — Pydantic schema enforcement, pluggable rule engine, dead-letter queue for failed records
 - **Streaming Mode** — Process large datasets with time/count-based batch windows without loading everything into memory
 - **Monitoring Dashboard** — FastAPI-powered REST API for pipeline run status, per-node metrics, and aggregate throughput stats
-- **YAML Configuration** — Define entire pipelines declaratively; the framework instantiates connectors, transforms, and wires the DAG
+- **YAML Configuration** — Define entire pipelines declaratively with batch or streaming mode; the framework instantiates connectors, transforms, and wires the DAG
 - **CLI** — Run, validate, and monitor pipelines from the command line
 
 ## Quick Start
@@ -78,6 +94,12 @@ pip install -e .
 
 # With PostgreSQL support
 pip install -e ".[postgres]"
+
+# With Kafka streaming support
+pip install -e ".[kafka]"
+
+# Everything
+pip install -e ".[all]"
 
 # Development
 pip install -e ".[dev]"
@@ -188,6 +210,7 @@ pipeline run --config etl_job.yaml
 | REST API | Yes | Yes | — | Pagination, Bearer/API key auth, rate limiting |
 | SQLite | Yes | Yes | Yes | SQL queries, auto-table creation, upsert |
 | PostgreSQL | Yes | Yes | Yes | Connection pooling, bulk inserts via COPY |
+| Kafka | Yes | Yes | Yes | JSON/Avro serde, consumer groups, dead letter topics |
 
 ## Transforms
 
@@ -199,6 +222,198 @@ pipeline run --config etl_job.yaml
 | **Join** | Hash-based joins | Inner, left, right, outer on key columns |
 | **Window** | Sliding window operations | Time or count-based windows with aggregation |
 | **Deduplicate** | Remove duplicates | By key columns, keep first or last |
+
+## Event-Driven Streaming
+
+Build real-time streaming pipelines with Kafka integration, windowed aggregations, and exactly-once semantics.
+
+### Streaming Architecture
+
+```mermaid
+graph LR
+    subgraph "Kafka Cluster"
+        T1[raw-transactions]
+        T2[enriched-transactions]
+        T3[fraud-alerts]
+        DLQ[dlq-transactions]
+    end
+
+    subgraph "Pipeline Engine"
+        C[KafkaConsumer] --> V[Schema Validator]
+        V --> |valid| E[Enrichment]
+        V --> |invalid| DLP[Dead Letter Producer]
+        E --> W[Windowed Aggregation]
+        E --> P1[KafkaProducer]
+        W --> P2[Alert Producer]
+    end
+
+    T1 --> C
+    P1 --> T2
+    P2 --> T3
+    DLP --> DLQ
+```
+
+### Streaming Pipeline Configuration
+
+```yaml
+pipeline:
+  name: event_driven_etl
+  mode: streaming
+
+sources:
+  transactions:
+    type: kafka
+    config:
+      brokers: ["localhost:9092"]
+      topic: raw-transactions
+      consumer_group: etl-pipeline
+      format: json
+      schema:
+        type: json_schema
+        path: schemas/transaction.json
+
+transforms:
+  - name: validate
+    type: schema_validation
+    input: transactions
+    schema: schemas/transaction.json
+    on_failure: dead_letter
+
+  - name: enrich
+    type: map
+    input: validate
+    columns:
+      risk_score: "amount * 0.001 if is_international else amount * 0.0001"
+
+  - name: aggregate
+    type: window_aggregate
+    input: enrich
+    window:
+      type: tumbling
+      size: 60s
+    group_by: [merchant_category]
+    aggregations:
+      total_amount: sum(amount)
+      tx_count: count(*)
+
+sinks:
+  enriched:
+    type: kafka
+    config:
+      brokers: ["localhost:9092"]
+      topic: enriched-transactions
+      format: json
+
+  alerts:
+    type: kafka
+    config:
+      topic: fraud-alerts
+      condition: "total_amount > 10000"
+
+dead_letter:
+  type: kafka
+  config:
+    topic: dlq-transactions
+```
+
+### Kafka Consumer/Producer API
+
+```python
+from pipeline_engine.streaming import (
+    KafkaConsumer, KafkaConsumerConfig, DeserializationFormat,
+    KafkaProducer, KafkaProducerConfig, SerializationFormat,
+)
+
+# Consumer
+config = KafkaConsumerConfig(
+    brokers=["localhost:9092"],
+    topics=["raw-transactions"],
+    consumer_group="etl-pipeline",
+    format=DeserializationFormat.JSON,
+)
+
+async def process(records):
+    for r in records:
+        print(r)
+
+consumer = KafkaConsumer(config, on_message=process)
+await consumer.start()
+
+# Producer
+producer_config = KafkaProducerConfig(
+    brokers=["localhost:9092"],
+    topic="enriched-transactions",
+    format=SerializationFormat.JSON,
+    idempotent=True,
+)
+
+async with KafkaProducer(producer_config) as producer:
+    await producer.send({"amount": 100, "currency": "USD"})
+    await producer.send_batch(records)
+```
+
+### Schema Registry
+
+```python
+from pipeline_engine.streaming import (
+    StreamSchemaValidator, SchemaType,
+    SchemaRegistryClient,
+)
+
+# Local validation
+schema = {"type": "object", "required": ["id"], "properties": {"id": {"type": "string"}}}
+validator = StreamSchemaValidator(schema, SchemaType.JSON_SCHEMA)
+result = validator.validate({"id": "tx-123"})
+assert result.is_valid
+
+# Remote registry (Confluent-compatible)
+client = SchemaRegistryClient("http://localhost:8081")
+schema_id = await client.register("transactions-value", avro_schema)
+latest = await client.get_latest_version("transactions-value")
+compatible = await client.check_compatibility("transactions-value", new_schema)
+```
+
+### Windowed Aggregations
+
+```python
+from pipeline_engine.streaming import (
+    WindowedAggregator, WindowConfig, WindowType, WatermarkState,
+)
+
+# Tumbling window: 60s buckets
+aggregator = WindowedAggregator(
+    config=WindowConfig(type=WindowType.TUMBLING, size_seconds=60),
+    group_by=["merchant_category"],
+    aggregations={
+        "total_amount": "sum(amount)",
+        "tx_count": "count(*)",
+        "avg_amount": "avg(amount)",
+    },
+    timestamp_field="timestamp",
+    watermark=WatermarkState(max_lateness_seconds=10),
+)
+
+# Process incoming records, get results from closed windows
+results = aggregator.process(records)
+# Force-flush remaining windows
+final = aggregator.flush()
+```
+
+### Docker Compose Quick Start
+
+```bash
+# Start Kafka, Zookeeper, Schema Registry, and Kafka UI
+docker compose up -d
+
+# Verify services
+docker compose ps
+
+# Open Kafka UI
+open http://localhost:8080
+
+# Run the streaming example
+python examples/kafka_streaming_pipeline.py
+```
 
 ## Validation
 
@@ -268,10 +483,10 @@ curl http://localhost:8080/health
 ```
 src/pipeline_engine/
 ├── core/           # DAG, executor, scheduler, state management
-├── connectors/     # CSV, JSON, REST, SQLite, PostgreSQL
+├── connectors/     # CSV, JSON, REST, SQLite, PostgreSQL, Kafka
 ├── transforms/     # Filter, map, aggregate, join, window, deduplicate
 ├── validation/     # Schema enforcement, rules engine, dead letter queue
-├── streaming/      # Batch windows, stream consumer
+├── streaming/      # Kafka consumer/producer, schema registry, stream processor
 ├── monitoring/     # FastAPI dashboard and metrics
 ├── config/         # YAML config parser and models
 ├── cli.py          # Click CLI
@@ -304,6 +519,9 @@ mypy src/pipeline_engine/
 - **FastAPI** for monitoring dashboard
 - **httpx** for async HTTP client
 - **aiosqlite** / **asyncpg** for database connectors
+- **confluent-kafka** for Kafka consumer/producer (optional)
+- **fastavro** for Avro serialization (optional)
+- **jsonschema** for JSON Schema validation (optional)
 - **Click** + **Rich** for CLI
 - **PyYAML** for configuration
 - **pytest** + **pytest-asyncio** for testing
