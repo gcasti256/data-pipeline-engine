@@ -5,6 +5,7 @@ from __future__ import annotations
 from .base import BaseConnector, ConnectorConfig
 from .csv_connector import CSVConnector
 from .json_connector import JSONConnector
+from .kafka_connector import KafkaConnectorConfig, KafkaSink, KafkaSource
 from .postgres_connector import PostgresConnector
 from .rest_connector import RESTConnector
 from .sqlite_connector import SQLiteConnector
@@ -21,4 +22,8 @@ __all__ = [
     "PostgresConnector",
     # API connectors
     "RESTConnector",
+    # Kafka connectors
+    "KafkaSource",
+    "KafkaSink",
+    "KafkaConnectorConfig",
 ]

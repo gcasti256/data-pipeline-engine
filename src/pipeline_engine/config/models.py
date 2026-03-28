@@ -7,16 +7,83 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
+class KafkaConfig(BaseModel):
+    """Kafka-specific configuration for source or sink connectors."""
+
+    brokers: list[str] = Field(
+        default_factory=lambda: ["localhost:9092"],
+        description="List of Kafka broker addresses",
+    )
+    topic: str = Field(
+        ...,
+        description="Kafka topic name",
+    )
+    consumer_group: str = Field(
+        default="pipeline-engine",
+        description="Consumer group ID (for source connectors)",
+    )
+    format: str = Field(
+        default="json",
+        description="Serialization format: 'json', 'avro', 'raw'",
+    )
+    schema: dict[str, Any] | None = Field(
+        default=None,
+        description="Schema configuration (type + path)",
+    )
+    condition: str | None = Field(
+        default=None,
+        description="Optional filter condition for conditional routing",
+    )
+    key_field: str | None = Field(
+        default=None,
+        description="Record field to use as message key for partitioning",
+    )
+
+
+class DeadLetterConfig(BaseModel):
+    """Dead letter topic configuration for failed records."""
+
+    type: str = Field(
+        default="kafka",
+        description="Dead letter destination type",
+    )
+    config: KafkaConfig | None = Field(
+        default=None,
+        description="Kafka configuration for the dead letter topic",
+    )
+
+
+class WindowAggregateConfig(BaseModel):
+    """Configuration for windowed aggregation transforms."""
+
+    type: str = Field(
+        ...,
+        description="Window type: 'tumbling', 'sliding', 'session'",
+    )
+    size: str = Field(
+        ...,
+        description="Window size (e.g. '60s', '5m', '1h')",
+    )
+    slide: str | None = Field(
+        default=None,
+        description="Slide interval for sliding windows",
+    )
+    gap: str | None = Field(
+        default=None,
+        description="Inactivity gap for session windows",
+    )
+
+
 class SourceConfig(BaseModel):
     """Configuration for a data source connector.
 
-    At minimum one of *path*, *database*, *query*, or *url* should be set
-    depending on the connector type.
+    At minimum one of *path*, *database*, *query*, *url*, or *config*
+    should be set depending on the connector type.
     """
 
     type: str = Field(
         ...,
-        description="Connector type: 'csv', 'json', 'sqlite', 'postgres', 'rest'",
+        description="Connector type: 'csv', 'json', 'sqlite', 'postgres', 'rest', 'kafka'",
     )
     path: str | None = Field(
         default=None,
@@ -41,6 +108,10 @@ class SourceConfig(BaseModel):
     batch_size: int = Field(
         default=1000,
         description="Number of records per batch when streaming",
+    )
+    config: KafkaConfig | None = Field(
+        default=None,
+        description="Kafka-specific configuration (for kafka connector)",
     )
     extra: dict[str, Any] = Field(
         default_factory=dict,
@@ -129,6 +200,22 @@ class TransformConfig(BaseModel):
     aggregation: str | None = Field(
         default=None,
         description="Aggregation function for window (for 'window' type)",
+    )
+
+    # --- schema_validation ---
+    schema: str | None = Field(
+        default=None,
+        description="Schema file path (for 'schema_validation' type)",
+    )
+    on_failure: str | None = Field(
+        default=None,
+        description="Failure handling: 'dead_letter', 'drop', 'raise' (for 'schema_validation')",
+    )
+
+    # --- window_aggregate (streaming) ---
+    window: WindowAggregateConfig | None = Field(
+        default=None,
+        description="Window configuration for streaming aggregation",
     )
 
 
